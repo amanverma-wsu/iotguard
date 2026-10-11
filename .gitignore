@@ -1,0 +1,25 @@
+# secrets: certs, private keys, generated passwords - never commit
+broker/certs/*
+!broker/certs/.gitkeep
+broker/dynsec/*.json
+*.key
+*.pem
+.env
+secrets/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# run artifacts
+data/*
+!data/.gitkeep
+*.log
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/

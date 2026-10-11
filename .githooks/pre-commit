@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Blocks commits that include private keys, generated credentials, or a .env file.
+# Enable once per clone:  git config core.hooksPath .githooks
+set -euo pipefail
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+
+if echo "$staged" | grep -E '(^|/)\.env$|\.key$|\.pem$|broker/dynsec/.*\.json$|(^|/)secrets/' >/dev/null 2>&1; then
+  echo "pre-commit: refusing to commit a key, cert, .env or generated dynsec file." >&2
+  exit 1
+fi
+
+for f in $staged; do
+  if git show ":$f" 2>/dev/null | grep -EnI 'BEGIN (RSA |EC |ENCRYPTED )?PRIVATE KEY' >/dev/null 2>&1; then
+    echo "pre-commit: private key material found in $f" >&2
+    exit 1
+  fi
+done
+exit 0

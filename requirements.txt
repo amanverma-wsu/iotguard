@@ -1,0 +1,6 @@
+paho-mqtt>=2.1,<3
+psutil
+matplotlib
+streamlit
+pandas
+pytest
