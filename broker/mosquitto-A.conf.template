@@ -1,0 +1,9 @@
+# Config A - baseline: anonymous, plaintext MQTT. Insecure on purpose.
+persistence false
+log_dest stdout
+log_type error
+log_type warning
+log_type notice
+
+listener ${PORT} ${BIND}
+allow_anonymous true
