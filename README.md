@@ -61,7 +61,7 @@ and rate limits. No real devices, no outside networks.
 Work in progress, built in phases.
 
 - [x] Phase 0 - repo scaffold
-- [ ] Phase 1 - broker configs A/B/C, TLS, identities
+- [x] Phase 1 - broker configs A/B/C, TLS, identities
 - [ ] Phase 2 - devices, controller, event logging
 - [ ] Phase 3 - attack scenarios
 - [ ] Phase 4 - detection + quarantine

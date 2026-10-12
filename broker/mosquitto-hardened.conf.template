@@ -1,0 +1,20 @@
+# Configs B and C - hardened: per-device logins, topic permissions (Dynamic Security), TLS.
+# B and C use the exact same broker config. C only adds the detector/quarantine process,
+# so any difference between B and C comes from detection alone.
+persistence false
+log_dest stdout
+log_type error
+log_type warning
+log_type notice
+
+per_listener_settings false
+allow_anonymous false
+
+plugin ${DYNSEC_PLUGIN}
+plugin_opt_config_file ${DYNSEC_FILE}
+
+listener ${PORT} ${BIND}
+cafile ${CERTS}/ca.crt
+certfile ${CERTS}/server.crt
+keyfile ${CERTS}/server.key
+tls_version tlsv1.2
