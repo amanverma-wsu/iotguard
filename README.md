@@ -62,7 +62,7 @@ Work in progress, built in phases.
 
 - [x] Phase 0 - repo scaffold
 - [x] Phase 1 - broker configs A/B/C, TLS, identities
-- [ ] Phase 2 - devices, controller, event logging
+- [x] Phase 2 - devices, controller, event logging
 - [ ] Phase 3 - attack scenarios
 - [ ] Phase 4 - detection + quarantine
 - [ ] Phase 5 - experiment harness + metrics
