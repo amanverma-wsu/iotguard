@@ -10,6 +10,8 @@ Probe kinds:
 """
 from __future__ import annotations
 
+import threading
+import uuid
 import json
 import time
 from dataclasses import dataclass, field
@@ -25,15 +27,15 @@ def _assert_lab(target: BrokerTarget) -> None:
     if target.host not in LAB_HOSTS:
         raise RuntimeError(f"probes only run against the lab broker, not {target.host!r}")
 
-
 @dataclass
 class ProbeResult:
     scenario: str
     config: str
     connected: bool = False
     canaries_seen: int = 0          # confidential readings an unauthorized client saw
+    command_delivered: bool = False # the broker accepted the published command
+    state_changed: bool = False     # the door actually changed state
     notes: dict = field(default_factory=dict)
-
 
 def unauthorized_read(target: BrokerTarget, log: EventLog, *, listen_seconds: float = 2.0,
                       as_identity: str | None = None) -> ProbeResult:
@@ -71,4 +73,57 @@ def unauthorized_read(target: BrokerTarget, log: EventLog, *, listen_seconds: fl
     log.emit(as_identity or "unknown", "probe_result", topics.SENSOR_TELEMETRY_ALL,
              "leaked" if res.canaries_seen else "blocked", scenario=res.scenario,
              canaries_seen=res.canaries_seen)
+    return res
+def unauthorized_command(target: BrokerTarget, log: EventLog, *, as_identity: str | None = None,
+                         action: str = "unlock", watch_seconds: float = 1.5) -> ProbeResult:
+    """A client that is not the controller tries to publish a door command. We watch the
+    door state topic to see whether the door actually changed.
+
+    as_identity=None     -> an unknown client (anonymous in A; rejected at login in B)
+    as_identity="temp-1" -> a real sensor identity whose ACL does not allow door commands
+
+    In config A the door opens; in config B the ACL blocks a sensor or unknown client from
+    publishing to the door command topic.
+    """
+    _assert_lab(target)
+    res = ProbeResult("unauthorized_command", target.config)
+    cmd_id = uuid.uuid4().hex[:12]
+    acked = threading.Event()
+
+    watcher_identity = None if target.config == "A" else "controller"
+    watcher = make_client(target, watcher_identity)
+
+    def on_message(c, u, msg):
+        try:
+            if json.loads(msg.payload).get("cmd_id") == cmd_id:
+                res.state_changed = True
+                acked.set()
+        except (ValueError, UnicodeDecodeError):
+            pass
+
+    watcher.on_message = on_message
+    if connect_blocking(watcher, target):
+        watcher.subscribe(topics.DOOR_STATE, qos=1)
+        time.sleep(0.2)
+
+    attacker = make_client(target, as_identity)
+    res.connected = connect_blocking(attacker, target)
+    log.emit(as_identity or "unknown", "probe_connect",
+             outcome="ok" if res.connected else "refused", scenario=res.scenario)
+    if res.connected:
+        info = attacker.publish(topics.DOOR_CMD, json.dumps({"action": action, "cmd_id": cmd_id,
+                                                            "ts": time.time()}), qos=1)
+        try:
+            info.wait_for_publish(2)
+        except Exception:
+            pass
+        res.command_delivered = info.rc == 0
+        acked.wait(watch_seconds)
+        attacker.disconnect()
+        attacker.loop_stop()
+    watcher.disconnect()
+    watcher.loop_stop()
+    log.emit(as_identity or "unknown", "probe_result", topics.DOOR_CMD,
+             "door_changed" if res.state_changed else "blocked", scenario=res.scenario,
+             state_changed=res.state_changed)
     return res
