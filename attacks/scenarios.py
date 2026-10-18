@@ -21,7 +21,8 @@ from iotguard.connection import BrokerTarget, connect_blocking, make_client
 from iotguard.events import EventLog
 
 LAB_HOSTS = {"127.0.0.1", "localhost", "::1", "mosquitto"}
-
+MAX_FLOOD_RATE = 2000      # messages/sec cap
+MAX_FLOOD_SECONDS = 30     # duration cap
 
 def _assert_lab(target: BrokerTarget) -> None:
     if target.host not in LAB_HOSTS:
@@ -35,7 +36,46 @@ class ProbeResult:
     canaries_seen: int = 0          # confidential readings an unauthorized client saw
     command_delivered: bool = False # the broker accepted the published command
     state_changed: bool = False     # the door actually changed state
+    sent: int = 0                   # flood messages published
+    accepted: int = 0               # flood messages the broker accepted
     notes: dict = field(default_factory=dict)
+
+def flood(target: BrokerTarget, log: EventLog, *, as_identity: str = "temp-1", rate_hz: float = 200,
+          seconds: float = 3.0) -> ProbeResult:
+    """A valid sensor publishes telemetry far above its normal rate on its own topic. This
+    is the one scenario a logged-in device can do in every config (it stays within its ACL),
+    which is why config C adds rate detection. Capped in rate and duration for safety."""
+    _assert_lab(target)
+    rate_hz = min(rate_hz, MAX_FLOOD_RATE)
+    seconds = min(seconds, MAX_FLOOD_SECONDS)
+    res = ProbeResult("flood", target.config)
+    topic = topics.telemetry_topic(as_identity)
+    client = make_client(target, as_identity)
+    res.connected = connect_blocking(client, target)
+    log.emit(as_identity, "probe_connect", outcome="ok" if res.connected else "refused",
+             scenario=res.scenario)
+    if not res.connected:
+        return res
+    interval = 1.0 / rate_hz
+    deadline = time.monotonic() + seconds
+    next_t = time.monotonic()
+    while time.monotonic() < deadline:
+        payload = json.dumps({"sensor": as_identity, "seq": res.sent, "ts": time.time(),
+                              "temp_c": 22.0, "flood": True})
+        info = client.publish(topic, payload, qos=0)
+        res.sent += 1
+        if info.rc == 0:
+            res.accepted += 1
+        next_t += interval
+        sleep = next_t - time.monotonic()
+        if sleep > 0:
+            time.sleep(sleep)
+    client.disconnect()
+    client.loop_stop()
+    res.notes = {"rate_hz": rate_hz, "seconds": seconds}
+    log.emit(as_identity, "probe_result", topic, "flooded", scenario=res.scenario,
+             sent=res.sent, accepted=res.accepted)
+    return res
 
 def unauthorized_read(target: BrokerTarget, log: EventLog, *, listen_seconds: float = 2.0,
                       as_identity: str | None = None) -> ProbeResult:

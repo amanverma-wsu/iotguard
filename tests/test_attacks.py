@@ -55,3 +55,16 @@ def test_unknown_cannot_command_door_on_B(broker_b):
     with Building(broker_b.target, log, sensors=1, rate_hz=5):
         res = scenarios.unauthorized_command(broker_b.target, log, action="unlock")
     assert not res.connected and not res.state_changed
+
+def test_flood_accepted_on_A(broker_a):
+    log = EventLog(None, config="A")
+    res = scenarios.flood(broker_a.target, log, as_identity="temp-1", rate_hz=200, seconds=1.0)
+    assert res.connected and res.accepted > 100
+
+
+def test_flood_accepted_on_B(broker_b):
+    # a valid sensor stays within its ACL, so flooding is accepted in B too
+    # (this is exactly the gap config C's detector closes)
+    log = EventLog(None, config="B")
+    res = scenarios.flood(broker_b.target, log, as_identity="temp-1", rate_hz=200, seconds=1.0)
+    assert res.connected and res.accepted > 100
