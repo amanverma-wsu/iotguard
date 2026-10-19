@@ -37,6 +37,11 @@ def broker_b():
     with BrokerProcess("B") as b:
         yield b
 
+@pytest.fixture
+def broker_c():
+    with BrokerProcess("C") as b:
+        yield b
+
 
 class Listener:
     """Subscribes and records (topic, payload) pairs it receives."""
