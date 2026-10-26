@@ -144,8 +144,11 @@ class _Actuator(Component):
         old, self.state = self.state, self.valid[action]
         cmd_id = payload.get("cmd_id")
         self.history.append({"ts": time.time(), "from": old, "to": self.state, "cmd_id": cmd_id})
-        self.log.emit(self.identity, "command_applied", topic, "changed" if old != self.state else "unchanged",
-                      action=action, state=self.state, cmd_id=cmd_id)
+        self.log.emit(
+            self.identity, "command_applied", topic,
+            "changed" if old != self.state else "unchanged",
+            action=action, state=self.state, cmd_id=cmd_id,
+        )
         self.client.publish(self.state_topic, json.dumps({"state": self.state, "cmd_id": cmd_id,
                                                           "ts": time.time()}), qos=1)
 
@@ -198,7 +201,9 @@ class Controller(Component):
                 if isinstance(payload.get("temp_c"), (int, float)):
                     self.latest[sensor] = float(payload["temp_c"])
                 avg = sum(self.latest.values()) / len(self.latest) if self.latest else None
-            self.log.emit(self.identity, "telemetry_received", topic, sensor=sensor, seq=payload.get("seq"))
+            self.log.emit(
+                self.identity, "telemetry_received", topic, sensor=sensor, seq=payload.get("seq")
+            )
             if avg is not None:
                 self._maybe_cool(avg)
             return
@@ -225,7 +230,9 @@ class Controller(Component):
 
     def _send(self, topic, action) -> str:
         cmd_id = uuid.uuid4().hex[:12]
-        self.client.publish(topic, json.dumps({"action": action, "cmd_id": cmd_id, "ts": time.time()}), qos=1)
+        self.client.publish(
+            topic, json.dumps({"action": action, "cmd_id": cmd_id, "ts": time.time()}), qos=1
+        )
         self.log.emit(self.identity, "command_sent", topic, action=action, cmd_id=cmd_id)
         return cmd_id
 
@@ -255,8 +262,10 @@ class Controller(Component):
 class Building:
     """Starts every legitimate device + the controller. Used by demos, tests and trials."""
 
-    def __init__(self, target: BrokerTarget, log: EventLog, *, sensors: int = topics.DEFAULT_SENSOR_COUNT,
-                 rate_hz: float = 1.0, seed: int = 0):
+    def __init__(
+        self, target: BrokerTarget, log: EventLog, *,
+        sensors: int = topics.DEFAULT_SENSOR_COUNT, rate_hz: float = 1.0, seed: int = 0,
+    ):
         self.door = Door(target, log)
         self.cooling = Cooling(target, log)
         self.controller = Controller(target, log)

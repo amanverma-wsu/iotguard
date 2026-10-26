@@ -95,7 +95,9 @@ class BrokerProcess:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             if self.proc.poll() is not None:
-                raise RuntimeError(f"mosquitto exited:\n{(self.workdir / 'broker.log').read_text()}")
+                raise RuntimeError(
+                    f"mosquitto exited:\n{(self.workdir / 'broker.log').read_text()}"
+                )
             try:
                 with socket.create_connection(("127.0.0.1", self.port), timeout=0.2):
                     return self
