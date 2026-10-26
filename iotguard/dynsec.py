@@ -73,7 +73,9 @@ class DynsecAdmin:
         self.run({
             "command": "createRole",
             "rolename": role,
-            "acls": [{"acltype": t, "topic": topic, "allow": True, "priority": 0} for t, topic in acls],
+            "acls": [
+                {"acltype": t, "topic": topic, "allow": True, "priority": 0} for t, topic in acls
+            ],
         })
 
     def create_client(self, username: str, password: str, role: str) -> None:

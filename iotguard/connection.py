@@ -38,7 +38,10 @@ class BrokerTarget:
         hardened = config in ("B", "C")
         port = int(os.environ.get("IOTGUARD_PORT", "8883" if hardened else "1883"))
         ca = os.environ.get("IOTGUARD_CA", str(DEFAULT_CERTS / "ca.crt")) if hardened else None
-        creds = load_credentials(Path(os.environ.get("IOTGUARD_CREDS", DEFAULT_CREDS))) if hardened else {}
+        creds = (
+            load_credentials(Path(os.environ.get("IOTGUARD_CREDS", DEFAULT_CREDS)))
+            if hardened else {}
+        )
         return cls(config, os.environ.get("IOTGUARD_HOST", "127.0.0.1"), port, ca, creds)
 
 

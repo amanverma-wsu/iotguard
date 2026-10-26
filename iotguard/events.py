@@ -26,7 +26,9 @@ class EventLog:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             self._fh = open(self.path, "a", buffering=1)
 
-    def emit(self, client: str, event_type: str, topic: str = "", outcome: str = "ok", **extra) -> dict:
+    def emit(
+        self, client: str, event_type: str, topic: str = "", outcome: str = "ok", **extra
+    ) -> dict:
         ev = {"run_id": self.run_id, "config": self.config, "ts": time.time(), "client": client,
               "event_type": event_type, "topic": topic, "outcome": outcome, **extra}
         with self._lock:

@@ -25,7 +25,9 @@ def main(argv=None) -> int:
     ap.add_argument("--sensors", type=int, default=5)
     ap.add_argument("--rate", type=float, default=1.0, help="telemetry per sensor per second")
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--door-every", type=float, default=10.0, help="seconds between test door commands")
+    ap.add_argument(
+        "--door-every", type=float, default=10.0, help="seconds between test door commands"
+    )
     args = ap.parse_args(argv)
 
     target = BrokerTarget.from_env()
