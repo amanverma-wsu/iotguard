@@ -1,0 +1,9 @@
+line-length = 100
+target-version = "py311"
+
+[lint]
+# core correctness + import order + style
+select = ["E", "F", "I", "W"]
+
+[lint.per-file-ignores]
+"tests/**" = ["E501"]
