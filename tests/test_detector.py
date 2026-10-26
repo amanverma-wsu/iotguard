@@ -62,4 +62,5 @@ def test_detection_only_does_not_quarantine(broker_c):
     from iotguard.connection import connect_blocking, make_client
     c = make_client(broker_c.target, "temp-2")
     assert connect_blocking(c, broker_c.target)
-    c.disconnect(); c.loop_stop()
+    c.disconnect()
+    c.loop_stop()
