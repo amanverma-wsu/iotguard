@@ -43,10 +43,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mosquitto mosquitto-clients
           sudo systemctl stop mosquitto || true
-          # tests run brokers from per-trial /tmp workdirs; the packaged
-          # AppArmor profile confines mosquitto to /etc/mosquitto, so unload it
-          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mosquitto || true
-          sudo ln -sf /etc/apparmor.d/usr.sbin.mosquitto /etc/apparmor.d/disable/
+          # tests run brokers from per-trial /tmp workdirs; Ubuntu's packaged
+          # AppArmor profile confines mosquitto to /etc/mosquitto, so tear it down
+          sudo aa-teardown || true
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mosquitto 2>/dev/null || true
+          sudo ln -sf /etc/apparmor.d/usr.sbin.mosquitto /etc/apparmor.d/disable/ 2>/dev/null || true
+          D=$(mktemp -d /tmp/iotguard-selfcheck-XXXXXX)
+          printf 'listener 0\nallow_anonymous true\n' > "$D/mosquitto.conf"
+          mosquitto -c "$D/mosquitto.conf" -v & MPID=$!
+          sleep 1
+          if ! kill -0 $MPID 2>/dev/null; then
+            echo "::error::mosquitto cannot read a /tmp config"
+            sudo aa-status 2>&1 | head -20 || true
+            sudo dmesg 2>/dev/null | grep -i 'apparmor.*mosquitto' | tail -10 || true
+            exit 1
+          fi
+          kill $MPID
 
       - name: Install dependencies
         run: |
