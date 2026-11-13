@@ -25,8 +25,10 @@ SCENARIOS = ["unauthorized_read", "unauthorized_command", "flood"]
 CONFIGS = ["A", "B", "C"]
 
 
-def run_one(run_id: str, config: str, scenario: str, repeat: int, seed: int) -> TrialResult:
-    log = EventLog(None, config=config)
+def run_one(run_id: str, config: str, scenario: str, repeat: int, seed: int,
+            log: EventLog | None = None) -> TrialResult:
+    if log is None:
+        log = EventLog(None, config=config)
     connected = False
     success = False
     detail = ""

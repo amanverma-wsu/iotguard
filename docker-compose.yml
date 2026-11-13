@@ -1,0 +1,22 @@
+# Two ways to run the stack:
+#   docker compose up dashboard                      -> dashboard at http://localhost:8501
+#   docker compose --profile sweep run --rm sweep    -> run a sweep, write data/ and figures/
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./figures:/app/figures
+
+  sweep:
+    build: .
+    profiles: ["sweep"]
+    command: >
+      sh -c "python -m experiments.run_trials --repeats 10 &&
+             python -m experiments.metrics &&
+             python -m experiments.plot"
+    volumes:
+      - ./data:/app/data
+      - ./figures:/app/figures
