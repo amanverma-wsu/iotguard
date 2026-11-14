@@ -56,3 +56,26 @@ def test_write_summary(tmp_path):
 
 def test_fields_unchanged():
     assert FIELDS[:3] == ["run_id", "config", "scenario"]
+
+
+def test_mean_containment_ms():
+    rows = [
+        {"run_id": "t", "config": "C", "scenario": "flood", "repeat": "0", "seed": "1",
+         "connected": "True", "attack_success": "False",
+         "detail": "accepted=32 quarantined=True containment_ms=120", "ts": "0"},
+        {"run_id": "t", "config": "C", "scenario": "flood", "repeat": "1", "seed": "1",
+         "connected": "True", "attack_success": "False",
+         "detail": "accepted=30 quarantined=True containment_ms=140", "ts": "0"},
+    ]
+    fc = metrics.summarize(rows)["flood_containment_C"]
+    assert fc["mean_containment_ms"] == 130.0
+
+
+def test_mean_containment_ms_absent_when_old_data():
+    rows = [
+        {"run_id": "t", "config": "C", "scenario": "flood", "repeat": "0", "seed": "1",
+         "connected": "True", "attack_success": "False",
+         "detail": "accepted=32 quarantined=True", "ts": "0"},
+    ]
+    fc = metrics.summarize(rows)["flood_containment_C"]
+    assert fc["mean_containment_ms"] is None

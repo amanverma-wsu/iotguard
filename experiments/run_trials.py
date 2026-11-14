@@ -43,15 +43,19 @@ def run_one(run_id: str, config: str, scenario: str, repeat: int, seed: int,
             res = scenarios.flood(t, log, as_identity="temp-1", rate_hz=200, seconds=1.5)
             connected = res.connected
             quarantined = False
+            cms = None
             if det is not None:
                 for _ in range(20):
                     if det.is_quarantined("temp-1"):
                         quarantined = True
                         break
                     time.sleep(0.05)
+                cms = det.containment_ms("temp-1")
                 det.stop()
             success = connected and not quarantined
             detail = f"accepted={res.accepted} quarantined={quarantined}"
+            if cms is not None:
+                detail += f" containment_ms={cms:.0f}"
         else:
             with Building(t, log, sensors=5, rate_hz=20, seed=seed):
                 time.sleep(0.2)
