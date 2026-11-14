@@ -61,12 +61,15 @@ def summarize(rows: list[dict]) -> dict:
         summary["configs"][config] = by_scenario
 
     floods_c = [r for r in rows if r["config"] == "C" and r["scenario"] == "flood"]
-    contained = [parse_detail(r["detail"]).get("quarantined") == "True" for r in floods_c]
-    accepted = [int(parse_detail(r["detail"]).get("accepted", 0)) for r in floods_c]
+    details = [parse_detail(r["detail"]) for r in floods_c]
+    contained = [d.get("quarantined") == "True" for d in details]
+    accepted = [int(d.get("accepted", 0)) for d in details]
+    cms = [float(d["containment_ms"]) for d in details if "containment_ms" in d]
     summary["flood_containment_C"] = {
         "n": len(floods_c),
         "containment_rate": _rate(contained),
         "mean_accepted": sum(accepted) / len(accepted) if accepted else 0.0,
+        "mean_containment_ms": sum(cms) / len(cms) if cms else None,
     }
     return summary
 
@@ -83,9 +86,12 @@ def format_table(summary: dict) -> str:
         lines.append(f"{scenario:<24}{cells}")
     fc = summary["flood_containment_C"]
     if fc["n"]:
-        lines += ["", f"config C flood containment: {fc['containment_rate']:.0%} "
-                  f"({fc['n']} trials), mean {fc['mean_accepted']:.0f} msgs accepted "
-                  f"before quarantine"]
+        line = (f"config C flood containment: {fc['containment_rate']:.0%} "
+                f"({fc['n']} trials), mean {fc['mean_accepted']:.0f} msgs accepted "
+                f"before quarantine")
+        if fc.get("mean_containment_ms") is not None:
+            line += f", mean {fc['mean_containment_ms']:.0f} ms to contain"
+        lines += ["", line]
     return "\n".join(lines)
 
 

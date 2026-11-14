@@ -74,9 +74,12 @@ with right:
                    "(lower is better). From the latest sweep in data/.")
         fc = summary["flood_containment_C"]
         if fc["n"]:
-            st.metric("Config C flood containment", f"{fc['containment_rate']:.0%}",
+            m1, m2 = st.columns(2)
+            m1.metric("Config C flood containment", f"{fc['containment_rate']:.0%}",
                       help=f"{fc['n']} flood trials; mean "
                            f"{fc['mean_accepted']:.0f} messages accepted before quarantine")
+            if fc.get("mean_containment_ms") is not None:
+                m2.metric("Mean time to contain", f"{fc['mean_containment_ms']:.0f} ms")
     except FileNotFoundError:
         st.warning("No sweep yet. Run `python -m experiments.run_trials` to populate data/.")
 
