@@ -86,7 +86,25 @@ def run_sweep(repeats: int, seed: int) -> tuple[list[TrialResult], str, float, f
     return rows, run_id, started, time.time()
 
 
+def _raise_fd_limit(target: int = 8192) -> None:
+    """Each trial opens many short-lived MQTT sockets; a long sweep can exhaust the
+    default file-descriptor limit (256 on macOS). Raise the soft limit toward the hard
+    limit so a full sweep runs without `ulimit -n`."""
+    try:
+        import resource
+    except ImportError:
+        return
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    want = target if hard == resource.RLIM_INFINITY else min(target, hard)
+    if want > soft:
+        try:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (want, hard))
+        except (ValueError, OSError):
+            pass
+
+
 def main(argv=None) -> int:
+    _raise_fd_limit()
     ap = argparse.ArgumentParser()
     ap.add_argument("--repeats", type=int, default=10)
     ap.add_argument("--seed", type=int, default=1)
