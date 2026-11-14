@@ -34,7 +34,7 @@ with st.sidebar:
                       format_func=lambda c: f"{c} - {CONFIG_BLURB[c]['name']}")
     st.caption(CONFIG_BLURB[config]["desc"])
     scenario = st.selectbox("Attack", list(SCENARIO_LABEL), format_func=SCENARIO_LABEL.get)
-    run = st.button("Run attack", type="primary", use_container_width=True)
+    run = st.button("Run attack", type="primary", width="stretch")
     st.divider()
     st.caption("Each run starts a fresh broker on a random port. "
                "Config C also starts the rate detector.")
@@ -59,7 +59,7 @@ with left:
         if events:
             df = pd.DataFrame(events)[["client", "event_type", "topic", "outcome"]]
             st.caption(f"Broker event log for this run ({len(df)} events)")
-            st.dataframe(df, use_container_width=True, height=240, hide_index=True)
+            st.dataframe(df, width="stretch", height=240, hide_index=True)
     else:
         st.info("Choose a configuration and an attack in the sidebar, then **Run attack**.")
 
@@ -69,7 +69,7 @@ with right:
         rows = load(latest_results())
         summary = summarize(rows)
         frame = comparison_frame(summary)
-        st.bar_chart(frame, height=300)
+        st.bar_chart(frame, height=300, stack=False)
         st.caption(f"Attack-success rate across {summary['n_trials']} recorded trials "
                    "(lower is better). From the latest sweep in data/.")
         fc = summary["flood_containment_C"]
