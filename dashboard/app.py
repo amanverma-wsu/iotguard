@@ -69,7 +69,7 @@ with right:
         rows = load(latest_results())
         summary = summarize(rows)
         frame = comparison_frame(summary)
-        st.bar_chart(frame, height=300)
+        st.bar_chart(frame, height=300, stack=False)
         st.caption(f"Attack-success rate across {summary['n_trials']} recorded trials "
                    "(lower is better). From the latest sweep in data/.")
         fc = summary["flood_containment_C"]
